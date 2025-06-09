@@ -2,7 +2,8 @@ using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
 {
-    public float speed = 5f;
+    public float walkSpeed = 5f;
+    public float runSpeed = 10f;
     public float gravity = -9.81f;
     public float jumpHeight = 1.5f;
 
@@ -11,11 +12,12 @@ public class PlayerMovement : MonoBehaviour
     private bool isGrounded;
     private Animator animator;
 
-    public Transform cam; // Drag your camera here
+    public Transform cam;
 
     float turnSmoothVelocity;
 
-    [HideInInspector] public bool isPunching = false; // <-- This flag!
+    [HideInInspector] public bool isPunching = false;
+    private bool wasGroundedLastFrame = true;  // 착지 감지용
 
     void Start()
     {
@@ -26,45 +28,59 @@ public class PlayerMovement : MonoBehaviour
 
     void Update()
     {
-        if (isPunching) return; // <-- Block movement if punching
+        if (isPunching) return;
 
         isGrounded = controller.isGrounded;
+
+        // 착지했을 때 점프 애니메이션 끄기
+        if (isGrounded && !wasGroundedLastFrame)
+        {
+            animator.SetBool("isJumping", false);
+        }
+        wasGroundedLastFrame = isGrounded;
+
         if (isGrounded && velocity.y < 0) velocity.y = -2f;
 
-        // --- Camera-relative movement ---
         float x = Input.GetAxis("Horizontal");
         float z = Input.GetAxis("Vertical");
         Vector3 direction = new Vector3(x, 0f, z).normalized;
 
-        // --- ANIMATION LOGIC ---
-        // Tell the Animator when we're moving (for walk/idle)
-        bool isWalking = direction.magnitude >= 0.1f;
-        if (animator != null)
-            animator.SetBool("isWalking", isWalking);
+        bool isRunning = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+        bool isMoving = direction.magnitude >= 0.1f;
 
-        if (isWalking)
+        // 점프 중이 아니면 걷기/달리기 애니메이션 실행
+        if (animator != null)
         {
-            // Get angle and rotate player
+            if (!animator.GetBool("isJumping"))
+            {
+                animator.SetBool("isWalking", isMoving && !isRunning);
+                animator.SetBool("isRunning", isMoving && isRunning);
+            }
+        }
+
+        if (isMoving && !animator.GetBool("isJumping"))
+        {
             float targetAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg + cam.eulerAngles.y;
             float smoothAngle = Mathf.SmoothDampAngle(transform.eulerAngles.y, targetAngle, ref turnSmoothVelocity, 0.1f);
             transform.rotation = Quaternion.Euler(0, smoothAngle, 0);
 
             Vector3 moveDir = Quaternion.Euler(0, targetAngle, 0) * Vector3.forward;
-            controller.Move(moveDir.normalized * speed * Time.deltaTime);
+            float currentSpeed = isRunning ? runSpeed : walkSpeed;
+            controller.Move(moveDir.normalized * currentSpeed * Time.deltaTime);
         }
 
-        // Jump
+        // 점프 입력 처리 및 점프 애니메이션 시작
         if (Input.GetButtonDown("Jump") && isGrounded)
         {
             velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+            animator.SetBool("isJumping", true);
         }
 
-        // Gravity
+        // 중력 적용
         velocity.y += gravity * Time.deltaTime;
         controller.Move(velocity * Time.deltaTime);
     }
 
-     // --- Animation Event Functions ---
     public void StartPunch()
     {
         isPunching = true;
@@ -75,61 +91,3 @@ public class PlayerMovement : MonoBehaviour
         isPunching = false;
     }
 }
-
-
-// using UnityEngine;
-
-// public class PlayerMovement : MonoBehaviour
-// {
-//     public float speed = 5f;
-//     public float gravity = -9.81f;
-//     public float jumpHeight = 1.5f;
-
-//     private CharacterController controller;
-//     private Vector3 velocity;
-//     private bool isGrounded;
-//     private Animator animator;
-
-//     public Transform cam; // Drag your camera here
-
-//     void Start()
-//     {
-//         controller = GetComponent<CharacterController>();
-//         if (cam == null && Camera.main != null) cam = Camera.main.transform;
-//         animator = GetComponent<Animator>();
-//     }
-
-//     void Update()
-//     {
-//         isGrounded = controller.isGrounded;
-//         if (isGrounded && velocity.y < 0) velocity.y = -2f;
-
-//         // --- Camera-relative movement ---
-//         float x = Input.GetAxis("Horizontal");
-//         float z = Input.GetAxis("Vertical");
-//         Vector3 direction = new Vector3(x, 0f, z).normalized;
-
-//         if (direction.magnitude >= 0.1f)
-//         {
-//             // Get angle and rotate player
-//             float targetAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg + cam.eulerAngles.y;
-//             float smoothAngle = Mathf.SmoothDampAngle(transform.eulerAngles.y, targetAngle, ref turnSmoothVelocity, 0.1f);
-//             transform.rotation = Quaternion.Euler(0, smoothAngle, 0);
-
-//             Vector3 moveDir = Quaternion.Euler(0, targetAngle, 0) * Vector3.forward;
-//             controller.Move(moveDir.normalized * speed * Time.deltaTime);
-//         }
-
-//         // Jump
-//         if (Input.GetButtonDown("Jump") && isGrounded)
-//         {
-//             velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
-//         }
-
-//         // Gravity
-//         velocity.y += gravity * Time.deltaTime;
-//         controller.Move(velocity * Time.deltaTime);
-//     }
-
-//     float turnSmoothVelocity;
-// }
