@@ -33,17 +33,17 @@ public class PlayerAttack : MonoBehaviour
             fistCollider.enabled = false;
     }
 
-    // 이 스크립트가 붙은 주먹 콜라이더에서 충돌 감지
-    private void OnTriggerEnter(Collider other)
-    {
-        if (other.CompareTag("Zombie"))
-        {
-            ZombieDie zombie = other.GetComponent<ZombieDie>();
-            if (zombie != null)
-            {
-                zombie.TakeHit();
-            }
-        }
-    }
+    // // 이 스크립트가 붙은 주먹 콜라이더에서 충돌 감지
+    // private void OnTriggerEnter(Collider other)
+    // {
+    //     if (other.CompareTag("Zombie"))
+    //     {
+    //         ZombieDie zombie = other.GetComponent<ZombieDie>();
+    //         if (zombie != null)
+    //         {
+    //             zombie.TakeHit();
+    //         }
+    //     }
+    // }
 }
 
