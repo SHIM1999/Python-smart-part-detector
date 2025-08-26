@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+runs/
+weights/
+*.onnx
+data/images/**
+data/labels/**
+!data/dataset.yaml
+.DS_Store
+.vscode/
+.idea/
